@@ -1,12 +1,14 @@
+// src/components/OnboardingWizard.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { validateEmail, validatePassword } from '../utils/validators';
 
-// Define user data shape, marking optional fields and step as optional
 type UserData = {
   id?: number;
   email: string;
   password: string;
   aboutMe?: string;
-  birthdate?: string; // ISO date string (yyyy-mm-dd)
+  birthdate?: string;
   street?: string;
   city?: string;
   state?: string;
@@ -14,316 +16,286 @@ type UserData = {
   step?: number;
 };
 
-// Configuration for dynamic onboarding components
 type ComponentConfig = {
   id: number;
   name: string;
   page: number;
 };
 
+// Constants
+const TOTAL_STEPS = 3;
+const CONFIG_ENDPOINT = '/api/admin/config';
+const USER_ENDPOINT = '/api/users';
+
 const OnboardingWizard: React.FC = () => {
-  // State hooks
   const [userData, setUserData] = useState<UserData>({ email: '', password: '' });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userId, setUserId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [components, setComponents] = useState<ComponentConfig[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [completed, setCompleted] = useState<boolean>(false);
 
-  /**
-   * Fetch component config for steps > 1
-   * Using useCallback to avoid unnecessary re-creation
-   */
+  const navigate = useNavigate();
+
+  // Fetch component config from admin for dynamic step rendering
   const fetchComponentConfig = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch('/api/admin/config');
-      if (!response.ok) throw new Error('Failed to load component config');
+      const response = await fetch(CONFIG_ENDPOINT);
+      if (!response.ok) throw new Error('Failed to load component configuration');
       const data: ComponentConfig[] = await response.json();
       setComponents(data);
-    } catch {
-      setError('Failed to load component configuration');
+    } catch (err: any) {
+      setError(err.message || 'Error loading component configuration');
     }
   }, []);
 
-  // Load config on step change (for steps 2 and 3)
   useEffect(() => {
     if (currentStep > 1) {
       fetchComponentConfig();
     }
   }, [currentStep, fetchComponentConfig]);
 
-  /**
-   * Validation for Step 1: Email and Password
-   * - Email restricted to @gmail.com for demo purposes
-   * - Password: min 8 chars, uppercase, lowercase, digit, special char
-   */
+  // Validate Step 1 fields
   const validateStep1 = (): string | null => {
-    const emailRegex = /^[^\s@]+@gmail\.com$/i;
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
-
-    if (!emailRegex.test(userData.email)) {
-      return 'Email must be a valid @gmail.com address';
-    }
-    if (!passwordRegex.test(userData.password)) {
-      return 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character';
+    if (!validateEmail(userData.email)) return 'Please enter a valid @gmail.com email address.';
+    if (!validatePassword(userData.password)) {
+      return 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.';
     }
     return null;
   };
 
-  /**
-   * Validation for Step 2 and 3 dynamic fields based on component config
-   */
-  const validateStep23 = (): string | null => {
-    // Determine required fields for current step
-    const requiredComponents = components
-      .filter((c) => c.page === currentStep)
-      .map((c) => c.name.toLowerCase());
+  // Validate dynamic step 2 or 3 based on config
+  const validateDynamicStep = (): string | null => {
+    const required = components
+      .filter(c => c.page === currentStep)
+      .map(c => c.name.toLowerCase());
 
-    if (requiredComponents.includes('about me') && !userData.aboutMe?.trim()) {
-      return 'About Me is required';
+    if (required.includes('about me') && !userData.aboutMe?.trim()) {
+      return 'About Me is required.';
     }
-    if (requiredComponents.includes('birthdate')) {
-      if (!userData.birthdate) return 'Birthdate is required';
-      const birthdate = new Date(userData.birthdate);
-      if (isNaN(birthdate.getTime()) || birthdate > new Date()) {
-        return 'Birthdate must be a valid date in the past';
+
+    if (required.includes('birthdate')) {
+      const date = new Date(userData.birthdate || '');
+      if (!userData.birthdate || isNaN(date.getTime()) || date > new Date()) {
+        return 'Please provide a valid past birthdate.';
       }
     }
-    if (requiredComponents.includes('address')) {
+
+    if (required.includes('address')) {
       const { street, city, state, zip } = userData;
       if (!street?.trim() || !city?.trim() || !state?.trim() || !zip?.trim()) {
-        return 'All address fields are required';
+        return 'All address fields are required.';
       }
     }
+
     return null;
   };
 
-  /**
-   * Handles form submission of Step 1
-   * Creates new user via POST and proceeds to next step on success
-   */
-  const handleStep1Submit = async (e: React.FormEvent) => {
+  // Handle step 1 form submission
+  const handleStep1Submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     const validationError = validateStep1();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) return setError(validationError);
 
     setLoading(true);
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch(USER_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...userData, step: 2 }),
       });
-      if (!response.ok) throw new Error('Failed to create user');
 
+      if (!response.ok) throw new Error('Failed to create user');
       const data = await response.json();
+
       setUserId(data.id);
       setCurrentStep(2);
     } catch (err: any) {
-      setError(err.message || 'Unexpected error occurred');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Handles form submission for Steps 2 and 3
-   * Updates existing user info via PUT, proceeds or finishes onboarding
-   */
+  // Handle step 2 or 3 submit
   const handleStepSubmit = async () => {
-    if (!userId) {
-      setError('User ID not found. Please restart the onboarding.');
-      return;
-    }
     setError(null);
+    if (!userId) return setError('Session expired. Please restart the onboarding process.');
 
-    const validationError = validateStep23();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    const validationError = validateDynamicStep();
+    if (validationError) return setError(validationError);
 
     setLoading(true);
     try {
-      const nextStep = currentStep < 3 ? currentStep + 1 : 4;
-      const response = await fetch(`/api/users/${userId}`, {
+      const nextStep = currentStep < TOTAL_STEPS ? currentStep + 1 : TOTAL_STEPS + 1;
+
+      const response = await fetch(`${USER_ENDPOINT}/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...userData, step: nextStep }),
       });
+
       if (!response.ok) throw new Error('Failed to update user data');
 
-      if (currentStep < 3) {
+      if (currentStep < TOTAL_STEPS) {
         setCurrentStep(nextStep);
       } else {
-        alert('Onboarding complete! Thank you.');
+        setCompleted(true);
       }
     } catch (err: any) {
-      setError(err.message || 'Unexpected error occurred');
+      setError(err.message || 'Something went wrong while saving.');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Render dynamic components for current step based on config
-   */
+  // Auto-redirect to home after 3s once onboarding completes
+  useEffect(() => {
+    if (completed) {
+      const timer = setTimeout(() => navigate('/'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [completed, navigate]);
+
+  // Render dynamic components based on admin config
   const renderComponents = () => {
-    const currentPageComponents = components.filter((c) => c.page === currentStep);
+    const pageComponents = components.filter(c => c.page === currentStep);
 
-    return currentPageComponents.map((component) => {
-      const key = `component-${component.id}`;
-      const nameLower = component.name.toLowerCase();
+    return pageComponents.map(({ id, name }) => {
+      const key = `component-${id}`;
+      const normalized = name.toLowerCase();
 
-      switch (nameLower) {
+      switch (normalized) {
         case 'about me':
           return (
             <div key={key} className="onboarding-component">
-              <label htmlFor="aboutMe">About Me:</label>
+              <label htmlFor="aboutMe">About Me</label>
               <textarea
                 id="aboutMe"
                 value={userData.aboutMe || ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, aboutMe: e.target.value }))}
-                rows={4}
+                onChange={(e) => setUserData(prev => ({ ...prev, aboutMe: e.target.value }))}
                 required
-                placeholder="Tell us about yourself"
               />
             </div>
           );
-
         case 'birthdate':
           return (
             <div key={key} className="onboarding-component">
-              <label htmlFor="birthdate">Birthdate:</label>
+              <label htmlFor="birthdate">Birthdate</label>
               <input
                 id="birthdate"
                 type="date"
-                value={userData.birthdate ? userData.birthdate.substring(0, 10) : ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, birthdate: e.target.value }))}
+                value={userData.birthdate?.substring(0, 10) || ''}
+                onChange={(e) => setUserData(prev => ({ ...prev, birthdate: e.target.value }))}
                 required
               />
             </div>
           );
-
         case 'address':
           return (
             <div key={key} className="onboarding-component address-group">
-              <label htmlFor="street">Street:</label>
+              <label htmlFor="street">Street</label>
               <input
                 id="street"
                 type="text"
                 value={userData.street || ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, street: e.target.value }))}
+                onChange={(e) => setUserData(prev => ({ ...prev, street: e.target.value }))}
                 required
-                placeholder="123 Main St"
               />
-
-              <label htmlFor="city">City:</label>
+              <label htmlFor="city">City</label>
               <input
                 id="city"
                 type="text"
                 value={userData.city || ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, city: e.target.value }))}
+                onChange={(e) => setUserData(prev => ({ ...prev, city: e.target.value }))}
                 required
-                placeholder="City"
               />
-
-              <label htmlFor="state">State:</label>
+              <label htmlFor="state">State</label>
               <input
                 id="state"
                 type="text"
                 value={userData.state || ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, state: e.target.value }))}
+                onChange={(e) => setUserData(prev => ({ ...prev, state: e.target.value }))}
                 required
-                placeholder="State"
               />
-
-              <label htmlFor="zip">Zip:</label>
+              <label htmlFor="zip">Zip Code</label>
               <input
                 id="zip"
                 type="text"
                 value={userData.zip || ''}
-                onChange={(e) => setUserData((prev) => ({ ...prev, zip: e.target.value }))}
+                onChange={(e) => setUserData(prev => ({ ...prev, zip: e.target.value }))}
                 required
-                placeholder="Zip code"
               />
             </div>
           );
-
         default:
           return null;
       }
     });
   };
 
+  // UI if onboarding completed
+  if (completed) {
+    return (
+      <div className="page-wrapper">
+        <div className="onboarding-container">
+          <h1>Thank you!</h1>
+          <p>Onboarding complete. Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="onboarding-container" role="main" aria-labelledby="onboarding-header">
         <header className="onboarding-header">
           <h1 id="onboarding-header">User Onboarding Wizard</h1>
-          <p aria-live="polite">Step {currentStep} of 3</p>
+          <p aria-live="polite">Step {currentStep} of {TOTAL_STEPS}</p>
         </header>
 
-        {/* Step 1: Email & Password */}
-        {currentStep === 1 && (
+        {currentStep === 1 ? (
           <form onSubmit={handleStep1Submit} noValidate>
             <div className="form-group">
-              <label htmlFor="email">Email:</label>
+              <label htmlFor="email">Email</label>
               <input
                 id="email"
                 type="email"
-                value={userData.email}
-                onChange={(e) => setUserData((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder="your.email@gmail.com"
-                required
                 autoComplete="email"
+                value={userData.email}
+                onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password:</label>
+              <label htmlFor="password">Password</label>
               <input
                 id="password"
                 type="password"
-                value={userData.password}
-                onChange={(e) => setUserData((prev) => ({ ...prev, password: e.target.value }))}
-                placeholder="Enter a strong password"
-                required
                 autoComplete="new-password"
+                value={userData.password}
+                onChange={(e) => setUserData(prev => ({ ...prev, password: e.target.value }))}
+                required
               />
             </div>
 
-            {error && (
-              <p className="error-message" role="alert" aria-live="assertive">
-                {error}
-              </p>
-            )}
+            {error && <p className="error-message" role="alert">{error}</p>}
 
             <button type="submit" disabled={loading} aria-busy={loading}>
               {loading ? 'Saving...' : 'Next'}
             </button>
           </form>
-        )}
-
-        {/* Steps 2 & 3: Dynamic fields */}
-        {currentStep > 1 && (
-          <section aria-label={`Step ${currentStep} form`}>
+        ) : (
+          <section>
             {renderComponents()}
-
-            {error && (
-              <p className="error-message" role="alert" aria-live="assertive">
-                {error}
-              </p>
-            )}
-
+            {error && <p className="error-message" role="alert">{error}</p>}
             <button onClick={handleStepSubmit} disabled={loading} aria-busy={loading}>
-              {loading ? 'Saving...' : currentStep < 3 ? 'Next' : 'Finish'}
+              {loading ? 'Saving...' : currentStep < TOTAL_STEPS ? 'Next' : 'Finish'}
             </button>
           </section>
         )}
