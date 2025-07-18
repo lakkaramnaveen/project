@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/OnboardingWizard.css'; // import the new CSS
 
 type UserData = {
   id?: number;
@@ -204,6 +203,7 @@ const OnboardingWizard: React.FC = () => {
   };
 
   return (
+    <div className="page-wrapper">
     <div className="onboarding-container">
       <div className="onboarding-header">
         <h1>User Onboarding Wizard</h1>
@@ -248,6 +248,7 @@ const OnboardingWizard: React.FC = () => {
           </button>
         </>
       )}
+    </div>
     </div>
   );
 };

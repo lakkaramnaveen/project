@@ -49,6 +49,7 @@ const AdminPanel: React.FC = () => {
   if (error) return <p className="error-message">{error}</p>;
 
   return (
+    <div className="page-wrapper">
     <div className="admin-panel">
       <h2>Admin Panel: Configure Onboarding Steps</h2>
       <ul>
@@ -77,6 +78,7 @@ const AdminPanel: React.FC = () => {
         ))}
       </ul>
       <button onClick={saveChanges}>Save</button>
+    </div>
     </div>
   );
 };

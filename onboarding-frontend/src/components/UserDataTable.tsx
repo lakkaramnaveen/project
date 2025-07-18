@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 type User = {
   id: number;
   email: string;
-  password?: string;
 };
 
 const UserDataTable: React.FC = () => {
@@ -27,24 +26,24 @@ const UserDataTable: React.FC = () => {
       });
   }, []);
 
-  if (loading) return <p>Loading users...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (loading) return <p className="user-status">Loading users...</p>;
+  if (error) return <p className="user-status error">{error}</p>;
 
   return (
-    <div className="user-data-table" style={{ maxWidth: 800, margin: '2rem auto', color: '#fff' }}>
-      <h2>User Data Table</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead style={{ backgroundColor: '#1a1a1a' }}>
+    <div className="user-table-container">
+      <h2 className="user-heading">Registered Users</h2>
+      <table className="user-table" aria-label="User table">
+        <thead>
           <tr>
-            <th style={{ border: '1px solid #444', padding: '0.5rem' }}>ID</th>
-            <th style={{ border: '1px solid #444', padding: '0.5rem' }}>Email</th>
+            <th>ID</th>
+            <th>Email</th>
           </tr>
         </thead>
         <tbody>
           {users.map((u) => (
-            <tr key={u.id} style={{ borderBottom: '1px solid #444' }}>
-              <td style={{ border: '1px solid #444', padding: '0.5rem' }}>{u.id}</td>
-              <td style={{ border: '1px solid #444', padding: '0.5rem' }}>{u.email}</td>
+            <tr key={u.id}>
+              <td>{u.id}</td>
+              <td>{u.email}</td>
             </tr>
           ))}
         </tbody>
