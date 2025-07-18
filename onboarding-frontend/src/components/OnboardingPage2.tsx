@@ -25,7 +25,9 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
   onBack,
   onUserUpdate,
 }) => {
+  // State for dynamic component list (strings normalized to lowercase no spaces)
   const [components, setComponents] = useState<string[]>([]);
+  // Form state initialized from passed userData (trim birthdate to yyyy-mm-dd)
   const [formData, setFormData] = useState<UserData>({
     aboutMe: userData.aboutMe || '',
     birthdate: userData.birthdate ? userData.birthdate.slice(0, 10) : '',
@@ -37,16 +39,20 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch component config for step 2 and normalize names
   useEffect(() => {
     async function fetchConfig() {
       try {
+        setError(null);
+        setLoading(true);
         const res = await fetch('/api/admin/config');
         if (!res.ok) throw new Error('Failed to fetch config');
         const configs: { name: string; page: number }[] = await res.json();
-        // Normalize names: lowercase, remove spaces
+
         const page2Components = configs
           .filter((c) => c.page === 2)
           .map((c) => c.name.toLowerCase().replace(/\s+/g, ''));
+
         setComponents(page2Components);
       } catch (e) {
         setError((e as Error).message);
@@ -57,16 +63,20 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
     fetchConfig();
   }, []);
 
+  // Handle form input changes generically
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Submit updated user data for this step
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    // Prepare payload with only the active components’ data
     const updateData: Partial<UserData> = {};
+
     components.forEach((component) => {
       switch (component) {
         case 'aboutme':
@@ -100,12 +110,18 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
   };
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (error)
+    return (
+      <p role="alert" style={{ color: 'red' }}>
+        {error}
+      </p>
+    );
 
   return (
-    <form onSubmit={handleSubmit} className="onboarding-form">
-      <h2>Step 2 of 3</h2>
+    <form onSubmit={handleSubmit} className="onboarding-form" aria-labelledby="step2-header" noValidate>
+      <h2 id="step2-header">Step 2 of 3</h2>
 
+      {/* Conditionally render About Me */}
       {components.includes('aboutme') && (
         <div className="onboarding-component">
           <label htmlFor="aboutMe">About Me:</label>
@@ -116,10 +132,15 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
             onChange={handleChange}
             rows={5}
             placeholder="Tell us about yourself"
+            aria-describedby="aboutMeHelp"
           />
+          <small id="aboutMeHelp" className="sr-only">
+            Please provide a short description about yourself.
+          </small>
         </div>
       )}
 
+      {/* Conditionally render Birthdate */}
       {components.includes('birthdate') && (
         <div className="onboarding-component">
           <label htmlFor="birthdate">Birthdate:</label>
@@ -129,10 +150,15 @@ const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
             name="birthdate"
             value={formData.birthdate}
             onChange={handleChange}
+            aria-describedby="birthdateHelp"
           />
+          <small id="birthdateHelp" className="sr-only">
+            Select your birthdate.
+          </small>
         </div>
       )}
 
+      {/* Conditionally render Address fields */}
       {components.includes('address') && (
         <>
           <div className="onboarding-component">
