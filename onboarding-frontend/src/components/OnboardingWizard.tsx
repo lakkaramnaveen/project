@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import '../styles/OnboardingWizard.css'; // import the new CSS
+// src/components/OnboardingWizard.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { validateEmail, validatePassword } from '../utils/validators';
 
 type UserData = {
   id?: number;
@@ -20,180 +22,213 @@ type ComponentConfig = {
   page: number;
 };
 
+// Constants
+const TOTAL_STEPS = 3;
+const CONFIG_ENDPOINT = '/api/admin/config';
+const USER_ENDPOINT = '/api/users';
+
 const OnboardingWizard: React.FC = () => {
   const [userData, setUserData] = useState<UserData>({ email: '', password: '' });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userId, setUserId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [components, setComponents] = useState<ComponentConfig[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [completed, setCompleted] = useState<boolean>(false);
+
+  const navigate = useNavigate();
+
+  // Fetch component config from admin for dynamic step rendering
+  const fetchComponentConfig = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await fetch(CONFIG_ENDPOINT);
+      if (!response.ok) throw new Error('Failed to load component configuration');
+      const data: ComponentConfig[] = await response.json();
+      setComponents(data);
+    } catch (err: any) {
+      setError(err.message || 'Error loading component configuration');
+    }
+  }, []);
 
   useEffect(() => {
     if (currentStep > 1) {
-      fetch('/api/admin/config')
-        .then(res => res.json())
-        .then(data => setComponents(data))
-        .catch(() => setError('Failed to load component config'));
+      fetchComponentConfig();
     }
-  }, [currentStep]);
+  }, [currentStep, fetchComponentConfig]);
 
+  // Validate Step 1 fields
   const validateStep1 = (): string | null => {
-    const emailRegex = /^[^\s@]+@gmail\.com$/;
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
-
-    if (!emailRegex.test(userData.email)) {
-      return 'Email must be a valid @gmail.com address';
-    }
-    if (!passwordRegex.test(userData.password)) {
-      return 'Password must be at least 8 characters, include uppercase, lowercase, number, and special character';
+    if (!validateEmail(userData.email)) return 'Please enter a valid @gmail.com email address.';
+    if (!validatePassword(userData.password)) {
+      return 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.';
     }
     return null;
   };
 
-  const validateStep23 = (): string | null => {
-    const requiredComponents = components.filter(c => c.page === currentStep).map(c => c.name.toLowerCase());
+  // Validate dynamic step 2 or 3 based on config
+  const validateDynamicStep = (): string | null => {
+    const required = components
+      .filter(c => c.page === currentStep)
+      .map(c => c.name.toLowerCase());
 
-    if (requiredComponents.includes('about me') && !userData.aboutMe?.trim()) {
-      return 'About Me is required';
+    if (required.includes('about me') && !userData.aboutMe?.trim()) {
+      return 'About Me is required.';
     }
-    if (requiredComponents.includes('birthdate')) {
+
+    if (required.includes('birthdate')) {
       const date = new Date(userData.birthdate || '');
-      if (isNaN(date.getTime()) || date > new Date()) {
-        return 'Birthdate must be a valid date in the past';
+      if (!userData.birthdate || isNaN(date.getTime()) || date > new Date()) {
+        return 'Please provide a valid past birthdate.';
       }
     }
-    if (requiredComponents.includes('address')) {
-      if (!userData.street || !userData.city || !userData.state || !userData.zip) {
-        return 'All address fields are required';
+
+    if (required.includes('address')) {
+      const { street, city, state, zip } = userData;
+      if (!street?.trim() || !city?.trim() || !state?.trim() || !zip?.trim()) {
+        return 'All address fields are required.';
       }
     }
+
     return null;
   };
 
-  const handleStep1Submit = async (e: React.FormEvent) => {
+  // Handle step 1 form submission
+  const handleStep1Submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
     const validationError = validateStep1();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) return setError(validationError);
 
     setLoading(true);
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch(USER_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...userData, step: 2 }),
       });
-      if (!response.ok) throw new Error('Failed to create user');
 
+      if (!response.ok) throw new Error('Failed to create user');
       const data = await response.json();
+
       setUserId(data.id);
       setCurrentStep(2);
     } catch (err: any) {
-      setError(err.message || 'Error occurred');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle step 2 or 3 submit
   const handleStepSubmit = async () => {
-    if (!userId) return;
     setError(null);
+    if (!userId) return setError('Session expired. Please restart the onboarding process.');
 
-    const validationError = validateStep23();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    const validationError = validateDynamicStep();
+    if (validationError) return setError(validationError);
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const nextStep = currentStep < TOTAL_STEPS ? currentStep + 1 : TOTAL_STEPS + 1;
+
+      const response = await fetch(`${USER_ENDPOINT}/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...userData, step: currentStep + 1 }),
+        body: JSON.stringify({ ...userData, step: nextStep }),
       });
-      if (!response.ok) throw new Error('Failed to update user');
 
-      if (currentStep < 3) {
-        setCurrentStep(prev => prev + 1);
+      if (!response.ok) throw new Error('Failed to update user data');
+
+      if (currentStep < TOTAL_STEPS) {
+        setCurrentStep(nextStep);
       } else {
-        alert('Onboarding complete!');
+        setCompleted(true);
       }
     } catch (err: any) {
-      setError(err.message || 'Error occurred');
+      setError(err.message || 'Something went wrong while saving.');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderComponents = () => {
-    const currentPageComponents = components.filter(c => c.page === currentStep);
+  // Auto-redirect to home after 3s once onboarding completes
+  useEffect(() => {
+    if (completed) {
+      const timer = setTimeout(() => navigate('/'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [completed, navigate]);
 
-    return currentPageComponents.map(component => {
-      switch (component.name.toLowerCase()) {
+  // Render dynamic components based on admin config
+  const renderComponents = () => {
+    const pageComponents = components.filter(c => c.page === currentStep);
+
+    return pageComponents.map(({ id, name }) => {
+      const key = `component-${id}`;
+      const normalized = name.toLowerCase();
+
+      switch (normalized) {
         case 'about me':
           return (
-            <div key="aboutMe" className="onboarding-component">
-              <label>About Me:</label>
+            <div key={key} className="onboarding-component">
+              <label htmlFor="aboutMe">About Me</label>
               <textarea
+                id="aboutMe"
                 value={userData.aboutMe || ''}
-                onChange={(e) => setUserData({ ...userData, aboutMe: e.target.value })}
-                rows={4}
+                onChange={(e) => setUserData(prev => ({ ...prev, aboutMe: e.target.value }))}
                 required
-                placeholder="Tell us about yourself"
               />
             </div>
           );
         case 'birthdate':
           return (
-            <div key="birthdate" className="onboarding-component">
-              <label>Birthdate:</label>
+            <div key={key} className="onboarding-component">
+              <label htmlFor="birthdate">Birthdate</label>
               <input
+                id="birthdate"
                 type="date"
-                value={userData.birthdate ? userData.birthdate.substring(0, 10) : ''}
-                onChange={(e) => setUserData({ ...userData, birthdate: e.target.value })}
+                value={userData.birthdate?.substring(0, 10) || ''}
+                onChange={(e) => setUserData(prev => ({ ...prev, birthdate: e.target.value }))}
                 required
               />
             </div>
           );
         case 'address':
           return (
-            <div key="address" className="onboarding-component">
-              <label>Street:</label>
+            <div key={key} className="onboarding-component address-group">
+              <label htmlFor="street">Street</label>
               <input
+                id="street"
                 type="text"
                 value={userData.street || ''}
-                onChange={(e) => setUserData({ ...userData, street: e.target.value })}
+                onChange={(e) => setUserData(prev => ({ ...prev, street: e.target.value }))}
                 required
-                placeholder="123 Main St"
               />
-              <label>City:</label>
+              <label htmlFor="city">City</label>
               <input
+                id="city"
                 type="text"
                 value={userData.city || ''}
-                onChange={(e) => setUserData({ ...userData, city: e.target.value })}
+                onChange={(e) => setUserData(prev => ({ ...prev, city: e.target.value }))}
                 required
-                placeholder="City"
               />
-              <label>State:</label>
+              <label htmlFor="state">State</label>
               <input
+                id="state"
                 type="text"
                 value={userData.state || ''}
-                onChange={(e) => setUserData({ ...userData, state: e.target.value })}
+                onChange={(e) => setUserData(prev => ({ ...prev, state: e.target.value }))}
                 required
-                placeholder="State"
               />
-              <label>Zip:</label>
+              <label htmlFor="zip">Zip Code</label>
               <input
+                id="zip"
                 type="text"
                 value={userData.zip || ''}
-                onChange={(e) => setUserData({ ...userData, zip: e.target.value })}
+                onChange={(e) => setUserData(prev => ({ ...prev, zip: e.target.value }))}
                 required
-                placeholder="Zip code"
               />
             </div>
           );
@@ -203,51 +238,68 @@ const OnboardingWizard: React.FC = () => {
     });
   };
 
-  return (
-    <div className="onboarding-container">
-      <div className="onboarding-header">
-        <h1>User Onboarding Wizard</h1>
-        <p>Step {currentStep} of 3</p>
+  // UI if onboarding completed
+  if (completed) {
+    return (
+      <div className="page-wrapper">
+        <div className="onboarding-container">
+          <h1>Thank you!</h1>
+          <p>Onboarding complete. Redirecting...</p>
+        </div>
       </div>
+    );
+  }
 
-      {currentStep === 1 && (
-        <form onSubmit={handleStep1Submit}>
-          <div>
-            <label>Email:</label>
-            <input
-              type="email"
-              required
-              value={userData.email}
-              onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-              placeholder="your.email@gmail.com"
-            />
-          </div>
-          <div>
-            <label>Password:</label>
-            <input
-              type="password"
-              required
-              value={userData.password}
-              onChange={(e) => setUserData({ ...userData, password: e.target.value })}
-              placeholder="Enter a strong password"
-            />
-          </div>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Next'}
-          </button>
-        </form>
-      )}
+  return (
+    <div className="page-wrapper">
+      <div className="onboarding-container" role="main" aria-labelledby="onboarding-header">
+        <header className="onboarding-header">
+          <h1 id="onboarding-header">User Onboarding Wizard</h1>
+          <p aria-live="polite">Step {currentStep} of {TOTAL_STEPS}</p>
+        </header>
 
-      {currentStep > 1 && (
-        <>
-          {renderComponents()}
-          {error && <p className="error-message">{error}</p>}
-          <button onClick={handleStepSubmit} disabled={loading}>
-            {loading ? 'Saving...' : currentStep < 3 ? 'Next' : 'Finish'}
-          </button>
-        </>
-      )}
+        {currentStep === 1 ? (
+          <form onSubmit={handleStep1Submit} noValidate>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={userData.email}
+                onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                value={userData.password}
+                onChange={(e) => setUserData(prev => ({ ...prev, password: e.target.value }))}
+                required
+              />
+            </div>
+
+            {error && <p className="error-message" role="alert">{error}</p>}
+
+            <button type="submit" disabled={loading} aria-busy={loading}>
+              {loading ? 'Saving...' : 'Next'}
+            </button>
+          </form>
+        ) : (
+          <section>
+            {renderComponents()}
+            {error && <p className="error-message" role="alert">{error}</p>}
+            <button onClick={handleStepSubmit} disabled={loading} aria-busy={loading}>
+              {loading ? 'Saving...' : currentStep < TOTAL_STEPS ? 'Next' : 'Finish'}
+            </button>
+          </section>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,88 +1,25 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
+/* General Page Wrapper */
+.page-wrapper {
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
+  background-color: #121212;
+  padding: 2rem;
+  box-sizing: border-box;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: rgba(255, 255, 255, 0.87);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+/* -------------------- Onboarding Form -------------------- */
 
-button {
-  display: block;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 1.1rem;
-  font-weight: 600;
-  font-family: inherit;
-  background-color: #646cff;
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.25s, border-color 0.25s;
-}
-
-button:hover:not(:disabled) {
-  background-color: #535bf2;
-  border-color: #535bf2;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  background-color: #444;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-.error-message {
-  color: #ff6b6b;
-  margin-top: -1rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* Onboarding container and form styles */
 .onboarding-container {
   max-width: 480px;
-  margin: 2rem auto;
+  width: 100%;
   padding: 2rem;
   background-color: #1a1a1a;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  color: rgba(255, 255, 255, 0.87);
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .onboarding-header {
@@ -117,6 +54,7 @@ input[type="email"],
 input[type="password"],
 input[type="text"],
 input[type="date"],
+input[type="number"],
 textarea {
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
@@ -124,125 +62,176 @@ textarea {
   background-color: #2a2a2a;
   color: #eee;
   font-size: 1rem;
-  font-family: inherit;
   transition: border-color 0.25s;
   resize: vertical;
+  font-family: inherit;
 }
 
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="text"]:focus,
-input[type="date"]:focus,
+input:focus,
 textarea:focus {
   outline: none;
   border-color: #646cff;
   box-shadow: 0 0 6px #646cffaa;
 }
 
-/* Admin panel styles */
-.admin-panel {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 1rem 2rem;
-  background-color: #1a1a1a;
-  color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
-
-.admin-panel h2 {
-  margin-bottom: 1.5rem;
-  font-size: 2rem;
+/* Error Message */
+.error-message {
+  color: #ff6b6b;
+  margin-top: -1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
   text-align: center;
 }
 
-.admin-panel ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1.5rem 0;
-}
-
-.admin-panel li {
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.admin-panel strong {
-  flex: 1;
-}
-
-.admin-panel select {
-  border-radius: 4px;
-  border: 1px solid #444;
-  padding: 0.3rem 0.5rem;
-  background-color: #242424;
-  color: white;
-  min-width: 60px;
-  cursor: pointer;
-}
-
-.admin-panel button {
-  margin-top: 1rem;
+/* Buttons */
+button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: 1.1rem;
   font-weight: 600;
   background-color: #646cff;
-  color: white;
+  color: #fff;
   cursor: pointer;
   transition: background-color 0.25s, border-color 0.25s;
+  font-family: inherit;
 }
 
-.admin-panel button:hover:not(:disabled) {
+button:hover:not(:disabled) {
   background-color: #535bf2;
   border-color: #535bf2;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-    color: #213547;
-  }
-  button:hover:not(:disabled) {
-    background-color: #d0d3ff;
-    border-color: #aab3ff;
-  }
-  input[type="email"],
-  input[type="password"],
-  input[type="text"],
-  input[type="date"],
-  textarea {
-    background-color: #fff;
-    color: #213547;
-    border: 1px solid #ccc;
-  }
-  input[type="email"]:focus,
-  input[type="password"]:focus,
-  input[type="text"]:focus,
-  input[type="date"]:focus,
-  textarea:focus {
-    border-color: #646cff;
-    box-shadow: 0 0 6px #646cffaa;
-  }
-  .onboarding-container,
-  .admin-panel {
-    background-color: #f9f9f9;
-    color: #213547;
-  }
-  .admin-panel select {
-    background-color: #fff;
-    color: #213547;
-    border: 1px solid #ccc;
-  }
+button:disabled {
+  cursor: not-allowed;
+  background-color: #444;
+}
+
+/* -------------------- Admin Panel -------------------- */
+
+.admin-panel {
+  max-width: 600px;
+  width: 100%;
+  padding: 2rem;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.admin-panel h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.admin-panel input[type='number'] {
+  border-radius: 8px;
+  border: 1px solid #444;
+  padding: 0.5rem 0.75rem;
+  background-color: #242424;
+  color: white;
+  font-family: inherit;
+}
+
+.admin-panel button {
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background-color: #646cff;
+  color: white;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+.admin-panel button:hover {
+  background-color: #535bf2;
+  border-color: #535bf2;
+}
+
+/* -------------------- User Table -------------------- */
+
+/* USER TABLE STYLING */
+
+/* Heading for the user table section */
+.user-heading {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Container centering and padding */
+.user-table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rem;
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+/* Table */
+.user-table {
+  width: 100%;
+  max-width: 600px;
+  border-collapse: collapse;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #2a2a2a;
+  color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Table Head */
+.user-table thead {
+  background-color: #333;
+}
+
+.user-table th {
+  padding: 0.75rem 1rem;
+  font-weight: bold;
+  text-align: left;
+  text-transform: uppercase;
+  border-bottom: 1px solid #444;
+  font-size: 0.95rem;
+}
+
+/* Table Body Rows */
+.user-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #444;
+  font-size: 0.95rem;
+}
+
+/* Row Highlight on Hover */
+.user-table tr:hover {
+  background-color: #383838;
+}
+
+/* Alternating row color */
+.user-table tr:nth-child(even) {
+  background-color: #242424;
+}
+
+/* Loading and Error Text */
+.user-status {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-top: 2rem;
+  color: #ccc;
+}
+
+.user-status.error {
+  color: #ff6b6b;
 }
