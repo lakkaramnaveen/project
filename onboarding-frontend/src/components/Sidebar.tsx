@@ -1,10 +1,13 @@
-// src/components/Sidebar.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Sidebar: React.FC = () => {
+type SidebarProps = {
+  isOpen: boolean;
+};
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : 'collapsed'}`}>
       <nav>
         <ul>
           <li><Link to="/">🏠 Home</Link></li>
