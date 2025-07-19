@@ -1,43 +1,51 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
-type User = {
+interface User {
   id: number;
   email: string;
-};
+}
 
 const UserDataTable: React.FC = () => {
-  // State for user list, loading status, and error messages
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch users from API on component mount
-    const fetchUsers = async () => {
-      try {
-        setError(null);
-        setLoading(true);
+  // Fetch users from API
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-        const response = await fetch('/api/users');
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch users: ${response.statusText}`);
-        }
-
-        const data: User[] = await response.json();
-        setUsers(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch users');
-      } finally {
-        setLoading(false);
+    try {
+      const response = await fetch('/api/users');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
       }
-    };
+      const data: User[] = await response.json();
 
-    fetchUsers();
+      // Sort users by ascending id before setting state
+      data.sort((a, b) => a.id - b.id);
+      setUsers(data);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
   if (loading) {
-    return <p className="user-status" aria-live="polite">Loading users...</p>;
+    return (
+      <p className="user-status" aria-live="polite" role="status">
+        Loading users...
+      </p>
+    );
   }
 
   if (error) {
@@ -49,7 +57,11 @@ const UserDataTable: React.FC = () => {
   }
 
   if (users.length === 0) {
-    return <p className="user-status">No users found.</p>;
+    return (
+      <p className="user-status" aria-live="polite" role="status">
+        No users found.
+      </p>
+    );
   }
 
   return (
