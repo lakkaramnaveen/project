@@ -155,11 +155,12 @@ const OnboardingWizard: React.FC = () => {
 
   // Auto-redirect to home after 3s once onboarding completes
   useEffect(() => {
-    if (completed) {
-      const timer = setTimeout(() => navigate('/'), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [completed, navigate]);
+  if (completed) {
+    const timer = setTimeout(() => navigate('/'), 1000); // Redirect to home after onboarding
+    return () => clearTimeout(timer);
+  }
+}, [completed, navigate]);
+
 
   // Render dynamic components based on admin config
   const renderComponents = () => {

@@ -1,27 +1,50 @@
-// src/App.jsx
+// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
 import OnboardingWizard from './components/OnboardingWizard';
 import AdminPanel from './components/AdminPanel';
 import DataTable from './components/UserDataTable';
-import './styles/App.css';
+import './App.css';
 
-/**
- * App Component - Root of the application
- * Defines route structure using React Router
- */
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Main user-facing onboarding flow */}
-        <Route path="/" element={<OnboardingWizard />} />
-
-        {/* Admin panel to manage onboarding components */}
-        <Route path="/admin" element={<AdminPanel />} />
-
-        {/* Public user data display */}
-        <Route path="/users" element={<DataTable />} />
+        {/* Pages with common layout */}
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
+        <Route
+          path="/onboarding"
+          element={
+            <Layout>
+              <OnboardingWizard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Layout>
+              <AdminPanel />
+            </Layout>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <Layout>
+              <DataTable />
+            </Layout>
+          }
+        />
       </Routes>
     </Router>
   );
