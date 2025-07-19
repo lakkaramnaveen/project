@@ -2,20 +2,26 @@ const express = require('express');
 const router = express.Router();
 const adminService = require('../services/adminService');
 
-// @route   GET /api/admin/config
-// @desc    Fetch component configuration for onboarding UI
+/**
+ * @route   GET /api/admin/config
+ * @desc    Fetch component configuration for onboarding UI
+ * @access  Public (adjust as needed)
+ */
 router.get('/', async (req, res) => {
   try {
     const config = await adminService.getConfig();
-    res.json(config);
+    return res.status(200).json(config);
   } catch (error) {
     console.error('Error fetching config:', error);
-    res.status(500).json({ message: 'Failed to fetch config' });
+    return res.status(500).json({ error: 'Failed to fetch config' });
   }
 });
 
-// @route   POST /api/admin/config
-// @desc    Update or insert configuration for components
+/**
+ * @route   POST /api/admin/config
+ * @desc    Update or insert configuration for components
+ * @access  Public (adjust as needed)
+ */
 router.post('/', async (req, res) => {
   const { components } = req.body;
 
@@ -24,13 +30,18 @@ router.post('/', async (req, res) => {
   }
 
   try {
+    // Update each component configuration concurrently
     const results = await Promise.all(
-      components.map(component => adminService.updateConfig(component))
+      components.map((component) => adminService.updateConfig(component))
     );
-    res.status(200).json({ message: 'Config updated', data: results });
-  } catch (err) {
-    console.error('Error updating config:', err);
-    res.status(500).json({ error: 'Failed to update config' });
+
+    return res.status(200).json({
+      message: 'Configuration updated successfully',
+      data: results,
+    });
+  } catch (error) {
+    console.error('Error updating config:', error);
+    return res.status(500).json({ error: 'Failed to update config' });
   }
 });
 
