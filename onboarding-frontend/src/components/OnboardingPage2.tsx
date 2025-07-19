@@ -1,4 +1,4 @@
-import React, { useState, type ChangeEvent, type FormEvent } from 'react';
+import React, { type ChangeEvent, type FormEvent } from 'react';
 
 /**
  * UserData holds the user input values for onboarding step 2.

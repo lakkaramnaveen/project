@@ -2,19 +2,26 @@ import React from 'react';
 
 type HeaderProps = {
   toggleSidebar: () => void;
+  isSidebarOpen: boolean;
 };
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+/**
+ * Header component with a toggle button to open/close sidebar.
+ */
+const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   return (
     <header className="header">
-      <button 
+      <button
         className="sidebar-toggle"
-        aria-label="Toggle sidebar"
+        aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         onClick={toggleSidebar}
+        aria-expanded={isSidebarOpen}
       >
-        &#9776;
+        {isSidebarOpen ? '✕' : '☰'}
       </button>
+
       <h1>Onboarding App</h1>
+
       <nav>
         <ul className="nav-links">
           <li><a href="/">Home</a></li>
