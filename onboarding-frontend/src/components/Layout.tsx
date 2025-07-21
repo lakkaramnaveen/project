@@ -1,18 +1,19 @@
 // src/components/Layout.tsx
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import type { FC, ReactNode } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 
 type LayoutProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
  * Layout component that wraps the application.
  * Manages sidebar open/collapse state and renders Header, Sidebar, Content, and Footer.
  */
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: FC<LayoutProps> = ({ children }) => {
   // Sidebar open state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
