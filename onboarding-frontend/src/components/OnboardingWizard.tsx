@@ -1,5 +1,6 @@
 // src/components/OnboardingWizard.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import type { FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateEmail, validatePassword } from '../utils/validators';
 
@@ -27,7 +28,7 @@ const TOTAL_STEPS = 3;
 const CONFIG_ENDPOINT = '/api/admin/config';
 const USER_ENDPOINT = '/api/users';
 
-const OnboardingWizard: React.FC = () => {
+const OnboardingWizard: FC = () => {
   const [userData, setUserData] = useState<UserData>({ email: '', password: '' });
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [userId, setUserId] = useState<number | null>(null);
@@ -46,8 +47,12 @@ const OnboardingWizard: React.FC = () => {
       if (!response.ok) throw new Error('Failed to load component configuration');
       const data: ComponentConfig[] = await response.json();
       setComponents(data);
-    } catch (err: any) {
-      setError(err.message || 'Error loading component configuration');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error loading component configuration');
+      }
     }
   }, []);
 
@@ -114,8 +119,12 @@ const OnboardingWizard: React.FC = () => {
 
       setUserId(data.id);
       setCurrentStep(2);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -146,8 +155,12 @@ const OnboardingWizard: React.FC = () => {
       } else {
         setCompleted(true);
       }
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong while saving.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong while saving.');
+      }
     } finally {
       setLoading(false);
     }

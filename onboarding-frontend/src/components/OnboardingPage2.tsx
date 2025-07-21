@@ -1,4 +1,4 @@
-import React, { type ChangeEvent, type FormEvent } from 'react';
+import type { ChangeEvent, FormEvent, FC } from 'react';
 
 /**
  * UserData holds the user input values for onboarding step 2.
@@ -36,7 +36,7 @@ interface OnboardingPage2Props {
  * Renders dynamic fields based on components prop,
  * handles controlled inputs and form submission.
  */
-const OnboardingPage2: React.FC<OnboardingPage2Props> = ({
+const OnboardingPage2: FC<OnboardingPage2Props> = ({
   userData,
   components,
   onUserDataChange,

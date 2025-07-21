@@ -1,5 +1,5 @@
 // src/components/Sidebar.tsx
-import React from 'react';
+import type { FC } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 type SidebarProps = {
@@ -10,7 +10,7 @@ type SidebarProps = {
  * Sidebar component with collapsible behavior.
  * Shows navigation links with icons.
  */
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
 
   // Define menu items once — easy to maintain and extend

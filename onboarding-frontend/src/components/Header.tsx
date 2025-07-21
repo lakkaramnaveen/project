@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 
 type HeaderProps = {
   toggleSidebar: () => void;
@@ -8,7 +8,7 @@ type HeaderProps = {
 /**
  * Header component with a toggle button to open/close sidebar.
  */
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
+const Header: FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   return (
     <header className="header">
       <button

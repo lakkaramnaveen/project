@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import type { FC } from 'react';
 
 interface User {
   id: number;
   email: string;
 }
 
-const UserDataTable: React.FC = () => {
+const UserDataTable: FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FC } from 'react';
 
 type ComponentConfig = {
   id?: number;
@@ -10,7 +11,7 @@ type ComponentConfig = {
  * AdminPanel component allows configuring onboarding steps,
  * fetching and updating component configuration from backend.
  */
-const AdminPanel: React.FC = () => {
+const AdminPanel: FC = () => {
   const [components, setComponents] = useState<ComponentConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
